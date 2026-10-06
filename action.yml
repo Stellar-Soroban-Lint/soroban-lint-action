@@ -1,0 +1,92 @@
+name: soroban-lint
+description: >-
+  Static analysis for Soroban smart contracts. Downloads the prebuilt
+  soroban-lint CLI, verifies its SHA-256 checksum, lints the repository, and
+  reports findings as annotations. soroban-lint performs syntactic, per-file
+  analysis of Soroban contract source using the Rust AST. It flags patterns
+  associated with missing authorization checks, panic paths, unchecked
+  arithmetic, and storage hazards in `#[contractimpl]` functions. It does not
+  expand macros, resolve types, or follow calls across files, so it can miss real
+  issues (false negatives) and flag safe code (false positives). A clean report
+  is not evidence a contract is secure, and this tool is not a substitute for an
+  audit.
+author: Stellar-Soroban-Lint contributors
+branding:
+  icon: shield
+  color: purple
+
+inputs:
+  version:
+    description: >-
+      soroban-lint-core release tag to install (for example v0.1.0), or
+      "latest" to use the newest published release.
+    required: false
+    default: latest
+  repository:
+    description: Repository that publishes the prebuilt CLI binaries.
+    required: false
+    default: Stellar-Soroban-Lint/soroban-lint-core
+  path:
+    description: File or directory to lint, relative to the workspace.
+    required: false
+    default: "."
+  fail-on:
+    description: Minimum severity that fails the step (error, warning, info, never).
+    required: false
+    default: error
+  experimental:
+    description: Enable the experimental rules (SL003-SL007).
+    required: false
+    default: "false"
+  config:
+    description: Path to a soroban-lint.toml file. Auto-discovered when omitted.
+    required: false
+    default: ""
+  args:
+    description: Extra whitespace-separated arguments appended to `soroban-lint check`.
+    required: false
+    default: ""
+  annotations:
+    description: Emit one workflow annotation per finding.
+    required: false
+    default: "true"
+  max-annotations:
+    description: Cap on emitted annotations, to protect the run's annotation budget.
+    required: false
+    default: "50"
+  checksum:
+    description: >-
+      Optional expected SHA-256 of the downloaded archive, for pinning beyond
+      the checksum published with the release asset.
+    required: false
+    default: ""
+  sarif-file:
+    description: When set, also write a SARIF 2.1.0 report to this path.
+    required: false
+    default: ""
+  token:
+    description: GitHub token used only to raise API rate limits. Never required for public releases.
+    required: false
+    default: ""
+
+outputs:
+  version:
+    description: The installed release tag.
+  binary:
+    description: Absolute path to the installed soroban-lint executable.
+  findings:
+    description: Total number of findings.
+  errors:
+    description: Number of findings with severity error.
+  warnings:
+    description: Number of findings with severity warning.
+  notices:
+    description: Number of findings with severity info.
+  exit-code:
+    description: Exit code returned by `soroban-lint check`.
+  sarif-file:
+    description: Path written when the sarif-file input is set.
+
+runs:
+  using: node24
+  main: dist/index.js

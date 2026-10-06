@@ -1,0 +1,13 @@
+#![no_std]
+use soroban_sdk::{contract, contractimpl, Address, Env};
+
+#[contract]
+pub struct Token;
+
+#[contractimpl]
+impl Token {
+    // No authorization check before the state mutation.
+    pub fn set_balance(env: Env, addr: Address, amount: i128) {
+        env.storage().persistent().set(&addr, &amount);
+    }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "soroban-lint-action",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Run soroban-lint, a syntactic Soroban contract linter, on a repository.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc && node --test \"build/test/*.test.js\"",
+    "verify": "npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@actions/core": "^3.0.1",
+    "@actions/exec": "^3.0.0",
+    "@actions/io": "^3.0.2",
+    "@actions/tool-cache": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.3"
+  }
+}

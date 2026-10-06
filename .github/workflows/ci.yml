@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Bundle
+        run: npm run build
+
+      - name: The committed bundle must match the source
+        run: |
+          if ! git diff --quiet -- dist; then
+            echo "::error::dist/index.js is out of date; run 'npm run build' and commit the result."
+            git --no-pager diff --stat -- dist
+            exit 1
+          fi
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # The action is exercised through the same interface a user hits: `uses:`.
+      # v0.1.0 is a real published release, so this also covers downloading and
+      # checksum-verifying a genuine asset.
+      - name: Clean contract is reported clean
+        id: clean
+        uses: ./
+        with:
+          version: v0.1.0
+          path: e2e/clean
+          fail-on: error
+
+      - name: Clean contract produced no findings
+        run: |
+          echo "findings=${{ steps.clean.outputs.findings }} version=${{ steps.clean.outputs.version }}"
+          test "${{ steps.clean.outputs.findings }}" = "0"
+
+      - name: Vulnerable contract is flagged and the step fails
+        id: vulnerable
+        continue-on-error: true
+        uses: ./
+        with:
+          version: v0.1.0
+          path: e2e/vulnerable
+          fail-on: error
+
+      - name: The failure is the expected one
+        run: |
+          test "${{ steps.vulnerable.outcome }}" = "failure"
+          test "${{ steps.vulnerable.outputs.findings }}" = "1"
+          test "${{ steps.vulnerable.outputs.errors }}" = "1"
+          test "${{ steps.vulnerable.outputs.exit-code }}" = "1"
+          test -x "${{ steps.vulnerable.outputs.binary }}"
+
+      - name: A wrong pinned checksum must be rejected
+        id: tampered
+        continue-on-error: true
+        uses: ./
+        with:
+          version: v0.1.0
+          path: e2e/clean
+          checksum: "0000000000000000000000000000000000000000000000000000000000000000"
+
+      - name: Verification actually ran
+        run: test "${{ steps.tampered.outcome }}" = "failure"
+
+      - name: A missing release must be rejected
+        id: missing
+        continue-on-error: true
+        uses: ./
+        with:
+          version: v0.0.0-does-not-exist
+          path: e2e/clean
+
+      - name: Missing release is a hard failure, not a silent pass
+        run: test "${{ steps.missing.outcome }}" = "failure"
