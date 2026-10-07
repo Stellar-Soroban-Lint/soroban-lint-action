@@ -22053,11 +22053,11 @@ var Summary = class {
    */
   addTable(rows) {
     const tableBody = rows.map((row) => {
-      const cells = row.map((cell) => {
-        if (typeof cell === "string") {
-          return this.wrap("td", cell);
+      const cells = row.map((cell2) => {
+        if (typeof cell2 === "string") {
+          return this.wrap("td", cell2);
         }
-        const { header, data, colspan, rowspan } = cell;
+        const { header, data, colspan, rowspan } = cell2;
         const tag = header ? "th" : "td";
         const attrs = Object.assign(Object.assign({}, colspan && { colspan }), rowspan && { rowspan });
         return this.wrap(tag, data, attrs);
@@ -23377,6 +23377,106 @@ function digestsEqual(a, b) {
   return timingSafeEqual(Buffer.from(a, "hex"), Buffer.from(b, "hex"));
 }
 
+// src/comment.ts
+var COMMENT_MARKER = "<!-- soroban-lint -->";
+var MAX_RENDERED = 20;
+function cell(value) {
+  return value.replaceAll("|", "\\|").replaceAll("\n", " ");
+}
+function renderCommentBody(diagnostics, counts, options) {
+  const lines = [
+    COMMENT_MARKER,
+    `### soroban-lint \`${options.tag}\``,
+    "",
+    `**${counts.total} finding(s)**: ${counts.errors} error(s), ${counts.warnings} warning(s), ${counts.notices} notice(s). \`fail-on: ${options.failOn}\`.`,
+    ""
+  ];
+  if (counts.total === 0) {
+    lines.push(
+      "No findings. A clean report is not evidence the contract is secure \u2014 this is a syntactic, per-file check, not an audit."
+    );
+    return lines.join("\n");
+  }
+  lines.push("| Rule | Severity | Location | Message |", "| --- | --- | --- | --- |");
+  for (const diagnostic of diagnostics.slice(0, MAX_RENDERED)) {
+    lines.push(
+      `| ${cell(diagnostic.rule_id)} | ${cell(diagnostic.severity)} | \`${cell(diagnostic.file)}:${diagnostic.start_line}:${diagnostic.start_column}\` | ${cell(diagnostic.message)} |`
+    );
+  }
+  if (diagnostics.length > MAX_RENDERED) {
+    lines.push("", `_${diagnostics.length - MAX_RENDERED} further finding(s) not listed; see the annotations and SARIF._`);
+  }
+  lines.push(
+    "",
+    "Syntactic, per-file analysis only. Not a security guarantee and not a substitute for an audit."
+  );
+  return lines.join("\n");
+}
+function isOurComment(body) {
+  return body.trimStart().startsWith(COMMENT_MARKER);
+}
+function pullRequestFromEvent(event, repositoryFullName) {
+  if (typeof event !== "object" || event === null) {
+    return null;
+  }
+  const record = event;
+  const number = record["number"];
+  if (typeof number !== "number" || !Number.isInteger(number) || number <= 0) {
+    return null;
+  }
+  if (typeof record["pull_request"] !== "object" || record["pull_request"] === null) {
+    return null;
+  }
+  const fromEvent = record["repository"]?.full_name;
+  const fullName = typeof fromEvent === "string" ? fromEvent : repositoryFullName;
+  if (typeof fullName !== "string" || !fullName.includes("/")) {
+    return null;
+  }
+  const [owner, repository] = fullName.split("/");
+  if (owner === void 0 || repository === void 0) {
+    return null;
+  }
+  return { owner, repository, number };
+}
+async function publishComment(options) {
+  const { context, token, body } = options;
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  const apiBase = options.apiBase ?? "https://api.github.com";
+  const headers = {
+    accept: "application/vnd.github+json",
+    authorization: `Bearer ${token}`,
+    "content-type": "application/json",
+    "x-github-api-version": "2022-11-28"
+  };
+  const base = `${apiBase}/repos/${context.owner}/${context.repository}/issues/${context.number}/comments`;
+  const listed = await fetchImpl(`${base}?per_page=100`, { headers });
+  if (!listed.ok) {
+    throw new Error(`listing comments failed: ${listed.status} ${listed.statusText}`);
+  }
+  const existing = await listed.json();
+  const ours = Array.isArray(existing) ? existing.find((comment) => isOurComment(comment.body)) : void 0;
+  if (ours !== void 0) {
+    const updated = await fetchImpl(`${apiBase}/repos/${context.owner}/${context.repository}/issues/comments/${ours.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ body })
+    });
+    if (!updated.ok) {
+      throw new Error(`updating the comment failed: ${updated.status} ${updated.statusText}`);
+    }
+    return "updated";
+  }
+  const created = await fetchImpl(base, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ body })
+  });
+  if (!created.ok) {
+    throw new Error(`creating the comment failed: ${created.status} ${created.statusText}`);
+  }
+  return "created";
+}
+
 // src/diagnostics.ts
 function annotationLevel(severity) {
   switch (severity) {
@@ -23659,6 +23759,9 @@ async function run() {
   ).addRaw(
     "\n\nSyntactic, per-file analysis only. Not a security guarantee and not a substitute for an audit."
   ).write();
+  if (getBooleanInput("comment") && token !== "") {
+    await updatePullRequestComment(token, diagnostics, counts, { tag, failOn });
+  }
   if (result.exitCode === 2) {
     throw new Error(
       `soroban-lint exited with 2 (usage or internal error): ${result.stderr.trim() || "no diagnostics emitted"}`
@@ -23667,6 +23770,23 @@ async function run() {
   if (result.exitCode === 1) {
     throw new Error(
       `${counts.total} finding(s) at or above the "${failOn}" fail-on threshold`
+    );
+  }
+}
+async function updatePullRequestComment(token, diagnostics, counts, options) {
+  try {
+    const eventPath = process.env["GITHUB_EVENT_PATH"];
+    const event = eventPath === void 0 ? null : JSON.parse(await readFile(eventPath, "utf8"));
+    const context = pullRequestFromEvent(event, process.env["GITHUB_REPOSITORY"]);
+    if (context === null) {
+      return;
+    }
+    const body = renderCommentBody(diagnostics, counts, options);
+    const outcome = await publishComment({ context, token, body });
+    info(`Pull request comment ${outcome}.`);
+  } catch (error2) {
+    warning(
+      `could not update the pull request comment (a fork pull request has a read-only token): ${error2 instanceof Error ? error2.message : String(error2)}`
     );
   }
 }

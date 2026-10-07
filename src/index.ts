@@ -16,12 +16,14 @@ import path from "node:path";
 
 import { checkArgs } from "./args.js";
 import { digestsEqual, parseChecksumFile, sha256File } from "./checksum.js";
+import { publishComment, pullRequestFromEvent, renderCommentBody } from "./comment.js";
 import {
   limitAnnotations,
   parseDiagnostics,
   summarize,
   toAnnotation,
   type Diagnostic,
+  type SeverityCounts,
 } from "./diagnostics.js";
 import { assetName, binaryName, rustTarget } from "./platform.js";
 import { assetUrls, resolveLatestTag } from "./release.js";
@@ -203,6 +205,10 @@ async function run(): Promise<void> {
     )
     .write();
 
+  if (core.getBooleanInput("comment") && token !== "") {
+    await updatePullRequestComment(token, diagnostics, counts, { tag, failOn });
+  }
+
   if (result.exitCode === 2) {
     throw new Error(
       `soroban-lint exited with 2 (usage or internal error): ${result.stderr.trim() || "no diagnostics emitted"}`,
@@ -211,6 +217,37 @@ async function run(): Promise<void> {
   if (result.exitCode === 1) {
     throw new Error(
       `${counts.total} finding(s) at or above the "${failOn}" fail-on threshold`,
+    );
+  }
+}
+
+/**
+ * Post or update the summary comment, tolerating a read-only token.
+ *
+ * Fork pull requests get a read-only `GITHUB_TOKEN`, so the API call fails there.
+ * Annotations and the job summary still work, so this warns instead of failing.
+ */
+async function updatePullRequestComment(
+  token: string,
+  diagnostics: readonly Diagnostic[],
+  counts: SeverityCounts,
+  options: { tag: string; failOn: FailOn },
+): Promise<void> {
+  try {
+    const eventPath = process.env["GITHUB_EVENT_PATH"];
+    const event: unknown = eventPath === undefined ? null : JSON.parse(await readFile(eventPath, "utf8"));
+    const context = pullRequestFromEvent(event, process.env["GITHUB_REPOSITORY"]);
+    if (context === null) {
+      return;
+    }
+    const body = renderCommentBody(diagnostics, counts, options);
+    const outcome = await publishComment({ context, token, body });
+    core.info(`Pull request comment ${outcome}.`);
+  } catch (error: unknown) {
+    core.warning(
+      `could not update the pull request comment (a fork pull request has a read-only token): ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     );
   }
 }

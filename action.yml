@@ -42,6 +42,13 @@ inputs:
     description: Emit one workflow annotation per finding.
     required: false
     default: "true"
+  comment:
+    description: >-
+      On a pull request, post a summary comment and update it in place on later
+      pushes. Ignored outside a pull request and on fork pull requests, whose
+      token is read-only.
+    required: false
+    default: "true"
   max-annotations:
     description: Cap on emitted annotations, to protect the run's annotation budget.
     required: false
