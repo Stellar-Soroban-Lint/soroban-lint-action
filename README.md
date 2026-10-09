@@ -1,32 +1,34 @@
-# soroban-lint-action
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="soroban-lint-action — Soroban contract checks in GitHub Actions" width="100%">
+</p>
 
-[![Documentation](https://img.shields.io/badge/docs-online-7C3AED)](https://stellar-soroban-lint.github.io/soroban-lint-core/)
+<p align="center">
+  <a href="https://github.com/Stellar-Soroban-Lint/soroban-lint-action/actions/workflows/ci.yml"><img src="https://github.com/Stellar-Soroban-Lint/soroban-lint-action/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license">
+  <a href="https://stellar-soroban-lint.github.io/soroban-lint-core/"><img src="https://img.shields.io/badge/docs-online-7C3AED" alt="Documentation"></a>
+  <a href="https://discord.gg/xZRZT6TpB"><img src="https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
+  <a href="https://t.me/+MrTh9uraIS5jMjhk"><img src="https://img.shields.io/badge/Telegram-join-26A5E4?logo=telegram&logoColor=white" alt="Telegram"></a>
+</p>
 
-Run [`soroban-lint`](https://github.com/Stellar-Soroban-Lint/soroban-lint-core) on a repository.
+`soroban-lint-action` runs the Soroban linter on pull requests and reports findings as annotations and a summary comment. It downloads the CLI from a core release and verifies the published SHA-256 before running it. soroban-lint performs syntactic, per-file analysis of Soroban contract source using the Rust AST. It flags patterns associated with missing authorization checks, panic paths, unchecked arithmetic, and storage hazards in `#[contractimpl]` functions. It does not expand macros, resolve types, or follow calls across files, so it can miss real issues (false negatives) and flag safe code (false positives). A clean report is not evidence a contract is secure, and this tool is not a substitute for an audit.
 
-The action downloads the prebuilt `soroban-lint` CLI for the runner platform from a
-`soroban-lint-core` release, **verifies its SHA-256 checksum against the checksum published
-alongside the release asset**, and only then runs it. It never builds from source and never uses
-Docker.
+[Docs](https://stellar-soroban-lint.github.io/soroban-lint-core/) · [Playground](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal) · [Core CLI](https://github.com/Stellar-Soroban-Lint/soroban-lint-core) · [Demo PR](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1) · [Issues](https://github.com/Stellar-Soroban-Lint/soroban-lint-action/issues)
 
-> soroban-lint performs syntactic, per-file analysis of Soroban contract source using the Rust AST. It flags patterns associated with missing authorization checks, panic paths, unchecked arithmetic, and storage hazards in `#[contractimpl]` functions. It does not expand macros, resolve types, or follow calls across files, so it can miss real issues (false negatives) and flag safe code (false positives). A clean report is not evidence a contract is secure, and this tool is not a substitute for an audit.
+## What it does
 
-## Usage
+The action downloads a release binary, verifies its SHA-256 against the checksum published with that release, and runs the linter. It can annotate changed lines, update a pull request summary comment in place, and write SARIF for GitHub code scanning.
 
-See the [documentation](https://stellar-soroban-lint.github.io/soroban-lint-core/) for input and
-output details, permissions, SARIF upload, checksum pinning, and fork pull request behavior.
+## Quick start
 
 ```yaml
-name: lint
-
+name: soroban-lint
 on:
   pull_request:
-
 permissions:
   contents: read
-
+  pull-requests: write
 jobs:
-  soroban-lint:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -36,141 +38,93 @@ jobs:
           fail-on: error
 ```
 
-Findings are reported as annotations on the changed files, the job summary counts them, and the step
-fails when a finding meets the `fail-on` threshold. On a pull request the action also posts a summary
-comment and updates it in place on later pushes.
+`pull-requests: write` lets the action post and update its summary comment. For forks, GitHub provides a read-only token; the action skips the comment and continues with annotations and the job summary. Use `sarif-file` with `security-events: write` and `github/codeql-action/upload-sarif` to upload SARIF.
 
-The action needs `contents: read` to download the release. Posting the summary comment additionally
-needs `pull-requests: write` (see [Fork pull requests](#fork-pull-requests)).
-
-### Enabling the experimental rules
-
-SL003–SL007 (unchecked arithmetic, unbounded storage growth, missing TTL extension, questionable
-storage type, unprotected initializer) are off by default. Turn them on deliberately:
-
-```yaml
-      - uses: Stellar-Soroban-Lint/soroban-lint-action@v0
-        with:
-          path: contracts
-          experimental: "true"
-          fail-on: warning
-```
-
-### Uploading SARIF
-
-```yaml
-jobs:
-  soroban-lint:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: Stellar-Soroban-Lint/soroban-lint-action@v0
-        with:
-          path: contracts
-          sarif-file: soroban-lint.sarif
-          fail-on: never
-      - uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: soroban-lint.sarif
-```
-
-## Findings on a pull request
-
-Findings on lines changed by the pull request are annotated inline, and the job summary counts them:
-
-![soroban-lint annotations on a pull request](docs/assets/pr-annotations.png)
-
-Live examples on a real pull request, covering both outcomes:
-
-- A failing run with `fail-on: error`: [soroban-lint-portal#1](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1).
-- A passing run with `fail-on: never` and a low `max-annotations`: [soroban-lint-portal#2](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/2).
-
-## Inputs
+### Inputs
 
 | Input | Default | Description |
 |---|---|---|
-| `version` | `latest` | `soroban-lint-core` release tag to install (e.g. `v0.1.0`), or `latest`. |
+| `version` | `latest` | Core release tag to install, or `latest`. |
 | `repository` | `Stellar-Soroban-Lint/soroban-lint-core` | Repository that publishes the binaries. |
 | `path` | `.` | File or directory to lint. |
 | `fail-on` | `error` | Minimum severity that fails the step: `error`, `warning`, `info`, or `never`. |
-| `experimental` | `false` | Enable the experimental rules. |
-| `config` | – | Path to a `soroban-lint.toml`. Auto-discovered when omitted. |
-| `args` | – | Extra whitespace-separated arguments appended to `soroban-lint check`. |
-| `annotations` | `true` | Emit one workflow annotation per finding. |
-| `max-annotations` | `50` | Cap on emitted annotations. |
-| `comment` | `true` | Post a summary comment on a pull request and update it in place on later pushes. |
-| `checksum` | – | Expected SHA-256 of the archive, to pin beyond the published checksum. |
-| `sarif-file` | – | When set, also write a SARIF 2.1.0 report to this path. |
-| `token` | – | Token used only to raise API rate limits; not required for public releases. |
+| `experimental` | `false` | Enable experimental rules SL003–SL007. |
+| `config` | auto-discover | Path to a `soroban-lint.toml`. |
+| `args` | empty | Extra whitespace-separated arguments for `soroban-lint check`. |
+| `annotations` | `true` | Emit workflow annotations. |
+| `comment` | `true` | Post and update a pull request summary comment. Skipped on fork PRs. |
+| `max-annotations` | `50` | Maximum emitted annotations. |
+| `checksum` | empty | Expected archive SHA-256, for pinning beyond the published checksum. |
+| `sarif-file` | empty | Also write a SARIF 2.1.0 report to this path. |
+| `token` | empty | Token used only to raise API rate limits. |
 
-## Outputs
+### Outputs
 
 | Output | Description |
 |---|---|
-| `version` | The installed release tag. |
-| `binary` | Absolute path to the installed executable (also added to `PATH`). |
-| `findings` | Total number of findings. |
-| `errors` / `warnings` / `notices` | Findings per severity. |
+| `version` | Installed release tag. |
+| `binary` | Absolute path to the executable, added to `PATH`. |
+| `findings` | Total findings. |
+| `errors` / `warnings` / `notices` | Findings by severity. |
 | `exit-code` | Exit code returned by `soroban-lint check`. |
-| `sarif-file` | Path written when `sarif-file` is set. |
+| `sarif-file` | Report path when `sarif-file` is set. |
 
-## Pinning
+### Pin a release and checksum
 
-`latest` is convenient but not reproducible. Pin a release tag, and optionally the archive digest:
+The digest is specific to the runner platform. This is the v0.1.1 Linux x86_64 archive digest:
 
 ```yaml
       - uses: Stellar-Soroban-Lint/soroban-lint-action@v0
         with:
-          version: v0.1.0
-          # SHA-256 of soroban-lint-v0.1.0-x86_64-unknown-linux-gnu.tar.gz
-          checksum: 1b377f6da30e01c7577e220814c2a960f358eb622a6a2ca9ce64ad3b2b1c0321
+          version: v0.1.1
+          checksum: 3b438d69726f2623adb4b9e8daf20c43741a1b1f778392e3d38401f6b0dc41d5
 ```
 
-The digest is platform-specific and is published beside each archive as `<archive>.sha256` on the
-release page. Pin the digest for the runner you use, or omit `checksum` and rely on the release's
-owned `.sha256` file.
+See the [v0.1.1 release assets](https://github.com/Stellar-Soroban-Lint/soroban-lint-core/releases/tag/v0.1.1) for the other platform digests.
 
-## Supported runners
+### Demo pull requests
 
-`x86_64`/`aarch64` Linux, `x86_64`/`aarch64` macOS, and `x86_64` Windows. The action runs on the
-`node24` runtime.
+[![Inline annotations and a job summary](docs/assets/pr-annotations.png)](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1)
 
-## Fork pull requests
+- [Failing run with `fail-on: error`](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1)
+- [Passing run with `fail-on: never`](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/2)
 
-A pull request from a fork runs with a read-only `GITHUB_TOKEN`, so writing a comment or a check
-fails. The action treats that as expected: it logs a warning and continues. The workflow-command
-annotations and the job summary still work, which is why the pull request still shows the findings.
-The summary comment and any SARIF upload are skipped.
+## Architecture
 
-## GitHub limits
+The core data flow is `source → syn AST → rule visitors → Diagnostics → text | JSON | SARIF | WASM`. This action downloads the selected release, verifies the archive checksum, and invokes the CLI. The linter does not expand macros, resolve types, or analyze calls across files. Findings need review; they are not proof that a contract is vulnerable or safe. See the [architecture documentation](https://stellar-soroban-lint.github.io/soroban-lint-core/architecture/).
 
-The action is designed around GitHub's caps rather than discovering them in production:
+## The ecosystem
 
-| Limit | Value | How the action handles it |
+| Repository | Role |
+|---|---|
+| [soroban-lint-core](https://github.com/Stellar-Soroban-Lint/soroban-lint-core) | Analysis engine, CLI, and release binaries. |
+| [soroban-lint-action](https://github.com/Stellar-Soroban-Lint/soroban-lint-action) | Runs the CLI in GitHub Actions. |
+| [soroban-lint-portal](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal) | Playground source; the hosted site currently returns 404. |
+| Demo PRs ([#1](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1), [#2](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/2)) | Example annotation and `fail-on` runs; there is no separate demo repository. |
+
+## Maintainers
+
+| Name | GitHub | Telegram |
 |---|---|---|
-| Workflow-command annotations | 10 per step, 50 per job | `max-annotations` (default `50`) caps emission; the dropped count is logged, never hidden |
-| Checks API annotations | 50 per request | Not called directly; the optional SARIF upload is the bulk channel |
-| Pull request comment body | 65,536 characters | The comment lists at most 20 findings, then points at the annotations and SARIF |
-| Default `GITHUB_TOKEN` | Read-only for fork pull requests; read/write scope set by the repository's **Workflow permissions** | Writing the comment needs `pull-requests: write`; the action skips it rather than failing |
+| ojuotimi932 | [@ojuotimi932](https://github.com/ojuotimi932) | [Telegram](https://t.me/+MrTh9uraIS5jMjhk) |
 
-When there are more findings than the cap, nothing is silently dropped: the remainder is counted in
-the log, listed in the job summary, and included in the SARIF file if `sarif-file` is set.
+## Community
+- Telegram: https://t.me/+MrTh9uraIS5jMjhk
+- Discord: https://discord.gg/xZRZT6TpB
 
-## Development
+## Contributing
 
-```bash
-npm ci
-npm run verify   # typecheck, unit tests, and a rebuild of dist/index.js
-```
+Read [CONTRIBUTING.md](CONTRIBUTING.md), then choose an issue from the [good first issue list](https://github.com/Stellar-Soroban-Lint/soroban-lint-action/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+Run `npm ci` and `npm test`; use `npm run verify` before opening a PR.
 
-`dist/index.js` is committed because GitHub executes it directly; CI fails if it is out of date
-with `src/`.
+## Contributors
 
-## Related repositories
+[![Contributors](https://contrib.rocks/image?repo=Stellar-Soroban-Lint/soroban-lint-action)](https://github.com/Stellar-Soroban-Lint/soroban-lint-action/graphs/contributors)
 
-- [`soroban-lint-core`](https://github.com/Stellar-Soroban-Lint/soroban-lint-core) — the engine and the released binaries this action downloads.
-- [`soroban-lint-portal`](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal) — browser playground running the same engine as WebAssembly.
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).
+## Security
+
+See [SECURITY.md](SECURITY.md) to report a vulnerability. The linter aids code review; it is not an audit and does not prove a contract is secure.
+
+## License
+
+Licensed under [MIT](LICENSE).
