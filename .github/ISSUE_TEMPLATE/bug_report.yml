@@ -1,0 +1,27 @@
+name: Bug report
+description: Report an action failure, incorrect finding, missing annotation, or documentation defect.
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: Do not include secrets or live third-party exploits. The linter aids review; it is not an audit.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Include the action ref, runner OS, relevant workflow step, and output.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include a minimal workflow and contract snippet when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true

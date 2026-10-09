@@ -131,4 +131,4 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability. The linter aids code r
 
 ## License
 
-Licensed under [MIT](LICENSE).
+Licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE).

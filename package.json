@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Run soroban-lint, a syntactic Soroban contract linter, on a repository.",
-  "license": "MIT",
+  "license": "MIT OR Apache-2.0",
   "engines": {
     "node": ">=24"
   },

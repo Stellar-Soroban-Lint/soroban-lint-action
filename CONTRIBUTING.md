@@ -44,5 +44,5 @@ directly unless you are the bypass actor.
 
 ## License
 
-By contributing you agree your contribution is licensed under the repository's MIT
-terms.
+By contributing you agree your contribution is licensed under the repository's
+`MIT OR Apache-2.0` terms.

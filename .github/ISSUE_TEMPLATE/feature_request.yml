@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest a narrowly scoped improvement to the GitHub Action.
+title: "feature: "
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Problem to solve
+      description: Explain the concrete workflow use case and current limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+    validations:
+      required: true
