@@ -12,7 +12,7 @@
 
 `soroban-lint-action` runs the Soroban linter on pull requests and reports findings as annotations and a summary comment. It downloads the CLI from a core release and verifies the published SHA-256 before running it. soroban-lint performs syntactic, per-file analysis of Soroban contract source using the Rust AST. It flags patterns associated with missing authorization checks, panic paths, unchecked arithmetic, and storage hazards in `#[contractimpl]` functions. It does not expand macros, resolve types, or follow calls across files, so it can miss real issues (false negatives) and flag safe code (false positives). A clean report is not evidence a contract is secure, and this tool is not a substitute for an audit.
 
-[Docs](https://stellar-soroban-lint.github.io/soroban-lint-core/) · [Playground](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal) · [Core CLI](https://github.com/Stellar-Soroban-Lint/soroban-lint-core) · [Demo PR](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1) · [Issues](https://github.com/Stellar-Soroban-Lint/soroban-lint-action/issues)
+[Docs](https://stellar-soroban-lint.github.io/soroban-lint-core/) · [Playground](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal) · [Core CLI](https://github.com/Stellar-Soroban-Lint/soroban-lint-core) · [Demo PR #1 (closed): annotations](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1) · [Demo PR #2 (merged): passing run](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/2) · [Issues](https://github.com/Stellar-Soroban-Lint/soroban-lint-action/issues)
 
 ## What it does
 
@@ -71,16 +71,26 @@ jobs:
 
 ### Pin a release and checksum
 
-The digest is specific to the runner platform. This is the v0.1.1 Linux x86_64 archive digest:
+The digest is specific to the runner platform. This is the v0.1.2 Linux x86_64 archive digest:
 
 ```yaml
       - uses: Stellar-Soroban-Lint/soroban-lint-action@v0
         with:
-          version: v0.1.1
-          checksum: 3b438d69726f2623adb4b9e8daf20c43741a1b1f778392e3d38401f6b0dc41d5
+          version: v0.1.2
+          checksum: c2b2bcf5f01d2591b44a411b7c6724b4cc0c00671a8062e6a82deb26cea89538
 ```
 
-See the [v0.1.1 release assets](https://github.com/Stellar-Soroban-Lint/soroban-lint-core/releases/tag/v0.1.1) for the other platform digests.
+See the [v0.1.2 release assets](https://github.com/Stellar-Soroban-Lint/soroban-lint-core/releases/tag/v0.1.2) for the other platform digests.
+
+The default `version: latest` follows the newest `soroban-lint-core` release. The action ref `@v0` follows the current stable Action 0.x implementation; the tag resolves to commit `22b87ce`, whose executable source and `dist/` match `main`.
+
+## Demo pull requests
+
+The screenshot shows findings annotated on intentionally vulnerable contract lines in [PR #1 (closed, kept for reference)](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1). Its lint check reported 12 findings: 3 errors, 6 warnings, and 3 notices. The PR was closed without merging; its check run and annotations remain viewable.
+
+![Soroban lint findings and code scanning alerts on vulnerable contract lines](docs/assets/pr-annotations.png)
+
+[PR #2 (merged): passing run](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/2) uses `fail-on: never` and caps inline annotations at five; the rest are logged. Its lint, test, and E2E checks passed.
 
 ## Architecture
 
@@ -93,7 +103,8 @@ The core data flow is `source → syn AST → rule visitors → Diagnostics → 
 | [soroban-lint-core](https://github.com/Stellar-Soroban-Lint/soroban-lint-core) | Analysis engine, CLI, and release binaries. |
 | [soroban-lint-action](https://github.com/Stellar-Soroban-Lint/soroban-lint-action) | Runs the CLI in GitHub Actions. |
 | [soroban-lint-portal](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal) | Playground source; the hosted site currently returns 404. |
-| Demo PRs ([#1](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1), [#2](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/2)) | Example annotation and `fail-on` runs; there is no separate demo repository. |
+| [PR #1 (closed): annotations on intentionally vulnerable contracts](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1) | Findings and check annotations; kept for reference. |
+| [PR #2 (merged): passing run](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/2) | `fail-on: never`, five inline annotations, and passing checks. |
 
 ## Maintainers
 
@@ -120,4 +131,4 @@ See [SECURITY.md](SECURITY.md) to report a vulnerability. The linter aids code r
 
 ## License
 
-Licensed under [MIT](LICENSE).
+Licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE).
