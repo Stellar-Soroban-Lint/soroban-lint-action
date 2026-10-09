@@ -71,16 +71,16 @@ jobs:
 
 ### Pin a release and checksum
 
-The digest is specific to the runner platform. This is the v0.1.1 Linux x86_64 archive digest:
+The digest is specific to the runner platform. This is the v0.1.2 Linux x86_64 archive digest:
 
 ```yaml
       - uses: Stellar-Soroban-Lint/soroban-lint-action@v0
         with:
-          version: v0.1.1
-          checksum: 3b438d69726f2623adb4b9e8daf20c43741a1b1f778392e3d38401f6b0dc41d5
+          version: v0.1.2
+          checksum: c2b2bcf5f01d2591b44a411b7c6724b4cc0c00671a8062e6a82deb26cea89538
 ```
 
-See the [v0.1.1 release assets](https://github.com/Stellar-Soroban-Lint/soroban-lint-core/releases/tag/v0.1.1) for the other platform digests.
+See the [v0.1.2 release assets](https://github.com/Stellar-Soroban-Lint/soroban-lint-core/releases/tag/v0.1.2) for the other platform digests.
 
 ## Architecture
 
