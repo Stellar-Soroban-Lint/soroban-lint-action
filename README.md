@@ -1,5 +1,7 @@
 # soroban-lint-action
 
+[![Documentation](https://img.shields.io/badge/docs-online-7C3AED)](https://stellar-soroban-lint.github.io/soroban-lint-core/)
+
 Run [`soroban-lint`](https://github.com/Stellar-Soroban-Lint/soroban-lint-core) on a repository.
 
 The action downloads the prebuilt `soroban-lint` CLI for the runner platform from a
@@ -10,6 +12,9 @@ Docker.
 > soroban-lint performs syntactic, per-file analysis of Soroban contract source using the Rust AST. It flags patterns associated with missing authorization checks, panic paths, unchecked arithmetic, and storage hazards in `#[contractimpl]` functions. It does not expand macros, resolve types, or follow calls across files, so it can miss real issues (false negatives) and flag safe code (false positives). A clean report is not evidence a contract is secure, and this tool is not a substitute for an audit.
 
 ## Usage
+
+See the [documentation](https://stellar-soroban-lint.github.io/soroban-lint-core/) for input and
+output details, permissions, SARIF upload, checksum pinning, and fork pull request behavior.
 
 ```yaml
 name: lint
