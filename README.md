@@ -72,6 +72,17 @@ jobs:
           sarif_file: soroban-lint.sarif
 ```
 
+## Findings on a pull request
+
+Findings on lines changed by the pull request are annotated inline, and the job summary counts them:
+
+![soroban-lint annotations on a pull request](docs/assets/pr-annotations.png)
+
+Live examples on a real pull request, covering both outcomes:
+
+- A failing run with `fail-on: error`: [soroban-lint-portal#1](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1).
+- A passing run with `fail-on: never` and a low `max-annotations`: [soroban-lint-portal#2](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/2).
+
 ## Inputs
 
 | Input | Default | Description |
