@@ -109,10 +109,13 @@ jobs:
       - uses: Stellar-Soroban-Lint/soroban-lint-action@v0
         with:
           version: v0.1.0
-          checksum: 0000000000000000000000000000000000000000000000000000000000000000
+          # SHA-256 of soroban-lint-v0.1.0-x86_64-unknown-linux-gnu.tar.gz
+          checksum: 1b377f6da30e01c7577e220814c2a960f358eb622a6a2ca9ce64ad3b2b1c0321
 ```
 
-The checksum for each archive is published as `<archive>.sha256` on the release page.
+The digest is platform-specific and is published beside each archive as `<archive>.sha256` on the
+release page. Pin the digest for the runner you use, or omit `checksum` and rely on the release's
+owned `.sha256` file.
 
 ## Supported runners
 
