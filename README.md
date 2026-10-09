@@ -82,13 +82,6 @@ The digest is specific to the runner platform. This is the v0.1.1 Linux x86_64 a
 
 See the [v0.1.1 release assets](https://github.com/Stellar-Soroban-Lint/soroban-lint-core/releases/tag/v0.1.1) for the other platform digests.
 
-### Demo pull requests
-
-[![Inline annotations and a job summary](docs/assets/pr-annotations.png)](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1)
-
-- [Failing run with `fail-on: error`](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1)
-- [Passing run with `fail-on: never`](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/2)
-
 ## Architecture
 
 The core data flow is `source → syn AST → rule visitors → Diagnostics → text | JSON | SARIF | WASM`. This action downloads the selected release, verifies the archive checksum, and invokes the CLI. The linter does not expand macros, resolve types, or analyze calls across files. Findings need review; they are not proof that a contract is vulnerable or safe. See the [architecture documentation](https://stellar-soroban-lint.github.io/soroban-lint-core/architecture/).
