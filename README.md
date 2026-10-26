@@ -16,7 +16,7 @@
 
 ## What it does
 
-The action downloads a release binary, verifies its SHA-256 against the checksum published with that release, and runs the linter. It can annotate changed lines, update a pull request summary comment in place, and write SARIF for GitHub code scanning.
+The action downloads a Core release binary, verifies its SHA-256 against the checksum published with that release, and runs the linter. It can annotate changed lines, update a pull request summary comment in place, and write SARIF for GitHub code scanning. The analysis remains syntactic and per-file; annotations need human review and do not establish that a contract is secure or vulnerable.
 
 ## Quick start
 
@@ -96,13 +96,23 @@ The screenshot shows findings annotated on intentionally vulnerable contract lin
 
 The core data flow is `source → syn AST → rule visitors → Diagnostics → text | JSON | SARIF | WASM`. This action downloads the selected release, verifies the archive checksum, and invokes the CLI. The linter does not expand macros, resolve types, or analyze calls across files. Findings need review; they are not proof that a contract is vulnerable or safe. See the [architecture documentation](https://stellar-soroban-lint.github.io/soroban-lint-core/architecture/).
 
+## Verification
+
+```bash
+npm ci
+npm run verify
+npm run e2e
+```
+
+The verification workflow covers the action tests, type checking, linting, packaging, and end-to-end behavior. See [CI](https://github.com/Stellar-Soroban-Lint/soroban-lint-action/actions/workflows/ci.yml).
+
 ## The ecosystem
 
 | Repository | Role |
 |---|---|
 | [soroban-lint-core](https://github.com/Stellar-Soroban-Lint/soroban-lint-core) | Analysis engine, CLI, and release binaries. |
 | [soroban-lint-action](https://github.com/Stellar-Soroban-Lint/soroban-lint-action) | Runs the CLI in GitHub Actions. |
-| [soroban-lint-portal](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal) | Playground source; the hosted site currently returns 404. |
+| [soroban-lint-portal](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal) | Browser playground source; [open the live portal](https://stellar-soroban-lint.github.io/soroban-lint-portal/). |
 | [PR #1 (closed): annotations on intentionally vulnerable contracts](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/1) | Findings and check annotations; kept for reference. |
 | [PR #2 (merged): passing run](https://github.com/Stellar-Soroban-Lint/soroban-lint-portal/pull/2) | `fail-on: never`, five inline annotations, and passing checks. |
 
