@@ -71,16 +71,16 @@ jobs:
 
 ### Pin a release and checksum
 
-The digest is specific to the runner platform. This is the v0.1.2 Linux x86_64 archive digest:
+The digest is specific to the runner platform. This is the v0.2.0 Linux x86_64 archive digest:
 
 ```yaml
       - uses: Stellar-Soroban-Lint/soroban-lint-action@v0
         with:
-          version: v0.1.2
-          checksum: c2b2bcf5f01d2591b44a411b7c6724b4cc0c00671a8062e6a82deb26cea89538
+          version: v0.2.0
+          checksum: 4600bc00a191eba5b32408b913d042915f5a449300411c2cf8ff89ea09255d5f
 ```
 
-See the [v0.1.2 release assets](https://github.com/Stellar-Soroban-Lint/soroban-lint-core/releases/tag/v0.1.2) for the other platform digests.
+See the [v0.2.0 release assets](https://github.com/Stellar-Soroban-Lint/soroban-lint-core/releases/tag/v0.2.0) for the other platform digests.
 
 The default `version: latest` follows the newest `soroban-lint-core` release. The action ref `@v0` follows the current stable Action 0.x implementation; the tag resolves to commit `22b87ce`, whose executable source and `dist/` match `main`.
 
